@@ -1,0 +1,6 @@
+name = "Johan Planchon"
+License = [
+  "Apache Software License 2.0",
+  "MIT",
+  "GNU GPL v3.0"
+]
