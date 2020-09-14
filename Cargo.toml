@@ -1,0 +1,13 @@
+[package]
+name = "boilrs"
+version = "0.1.0"
+authors = ["Johan Planchon <johan.planchon@simplx.fr>"]
+edition = "2018"
+
+[dependencies]
+nom = "5.1"
+serde = "1.0"
+toml = "0.5"
+clap = "2.33"
+dialoguer = "0.6"
+console = "0.12"
