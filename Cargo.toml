@@ -13,7 +13,6 @@ case_mod = ["convert_case"]
 nom = "5.1"
 walkdir = "2.3"
 # Config files
-serde = "1.0"
 toml = "0.5"
 # Command line utility
 clap = "2.33"
