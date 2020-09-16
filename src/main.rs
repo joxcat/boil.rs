@@ -1,45 +1,29 @@
-extern crate nom;
+#![allow(dead_code)]
+#![recursion_limit = "1024"]
 
-const INPUT: &str = "before {{test}} next";
+#[macro_use]
+extern crate clap;
+#[macro_use]
+extern crate error_chain;
 
-fn special(i: &str) -> nom::IResult<&str, &str> {
-    nom::sequence::delimited(
-        nom::bytes::complete::tag("{{"),
-        nom::bytes::complete::is_not("}}"),
-        nom::bytes::complete::tag("}}"),
-    )(i)
-}
+use human_panic::setup_panic;
 
-fn not_special(i: &str) -> nom::IResult<&str, &str> {
-    nom::bytes::complete::is_not("{{")(i)
-}
+/* === LOCAL IMPORTS === */
+mod app;
+mod config;
+mod constants;
+mod errors;
+mod parser;
+mod plugins;
+/* === LOCAL IMPORTS === */
 
-fn parser(i: &str) -> nom::IResult<&str, String> {
-    let mut result = String::new();
-    let (i, res) = not_special(i)?;
-    result = format!("{}{}", result, res);
-    let (i, res) = special(i)?;
-    result = format!(
-        "{}{}",
-        result,
-        match res {
-            "test" => "middle",
-            _ => "",
-        }
-    );
-    Ok((i, result))
-}
+pub const INPUT: &str = "before {{test}} next {{ test }} or {{ test | PascalCase }}";
+pub type StandardResult<T> = Result<T, errors::Error>;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut buffer_in = INPUT;
-    let mut buffer_out = String::new();
-    while buffer_in.len() != 0 {
-        let result = parser(buffer_in)?;
-        println!("{:?}", result);
-        buffer_in = result.0;
-        buffer_out = format!("{}{}", buffer_out, result.1);
-    }
-    println!("{}", INPUT);
-    println!("{}", buffer_out);
+fn main() -> StandardResult<()> {
+    setup_panic!();
+
+    let _cli = app::init_app().get_matches();
+
     Ok(())
 }
