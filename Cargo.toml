@@ -7,6 +7,7 @@ description = "Small util to generate projets from templates"
 
 [features]
 case_mod = ["convert_case"]
+all_plugins = ["case_mod"]
 
 [dependencies]
 # Parsing files
@@ -14,6 +15,10 @@ nom = "5.1"
 walkdir = "2.3"
 # Config files
 toml = "0.5"
+# kv = "0.22" # To store downloaded templates
+# zip = "0.5" # To decompress downloaded templates
+# git2 = { version = "0.13", optional = true } # To download from any git repo (feature git)
+# reqwest = { version = "0.10", optional = true } # To download from github easily (default feature)
 # Command line utility
 clap = "2.33"
 dialoguer = "0.6"

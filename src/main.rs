@@ -29,7 +29,6 @@ fn main() -> StandardResult<()> {
         .expect("Template cli arg not found");
     let _output_path = cli.value_of("output").expect("Output path not found");
 
-    let config = config::parse_config(PathBuf::from(template_path).join("project.toml"))?;
-    println!("{:?}", config);
+    //let config = config::parse_config(PathBuf::from(template_path).join("project.toml"))?;
     Ok(())
 }
