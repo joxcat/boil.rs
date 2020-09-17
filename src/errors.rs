@@ -3,5 +3,7 @@ error_chain! {
         Fmt(::std::fmt::Error);
         Io(::std::io::Error);
         TomlDeser(::toml::de::Error);
+        Tera(::tera::Error);
+        WalkDir(::walkdir::Error);
     }
 }
