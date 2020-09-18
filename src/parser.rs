@@ -1,86 +1,65 @@
-extern crate nom;
+use crate::StandardResult;
+use indicatif::ProgressBar;
+use std::collections::HashMap;
+use std::path::PathBuf;
+use tera::{Context, Result, Tera, Value};
+use walkdir::DirEntry;
 
-use crate::constants::{IN_ISOLATOR, OUT_ISOLATOR, SEPARATOR};
+pub type TeraFilter<'a> =
+    &'a (dyn (Fn(&Value, &HashMap<String, Value>) -> Result<Value>) + Send + Sync);
 
-pub fn parse(input: String) -> Result<String, Box<dyn std::error::Error>> {
-    let mut buffer_in = input;
-    let mut buffer_out = String::new();
+#[derive(Debug, Clone)]
+pub enum FileContent {
+    Text(String),
+    Binary(Vec<u8>),
+}
 
-    while !buffer_in.is_empty() {
-        let result = parse_block(&buffer_in).expect("Cannot parse block");
-        buffer_out = format!("{}{}", buffer_out, result.1);
-        buffer_in = result.0.to_string();
+pub fn process_files(
+    template_path: &PathBuf,
+    files: Vec<DirEntry>,
+    config: &HashMap<String, Value>,
+) -> StandardResult<Vec<(PathBuf, FileContent)>> {
+    let mut processed_files = Vec::new();
+
+    let progress = ProgressBar::new_spinner();
+    progress.set_message("[2/4] Parsing files in template...");
+
+    for file in progress.wrap_iter(files.iter()) {
+        match std::fs::read_to_string(file.path()) {
+            Ok(content) => {
+                let processed = parse(&content, config)?;
+                processed_files.push((
+                    file.path()
+                        .strip_prefix(template_path.join("template"))?
+                        .to_path_buf(),
+                    FileContent::Text(processed),
+                ))
+            }
+            _ => processed_files.push((
+                file.path()
+                    .strip_prefix(template_path.join("template"))?
+                    .to_path_buf(),
+                FileContent::Binary(std::fs::read(file.path())?),
+            )),
+        }
     }
 
-    Ok(buffer_out)
+    progress.finish_and_clear();
+    Ok(processed_files)
 }
 
-// * Parse block
-fn parse_block<'a>(i: &'a str) -> nom::IResult<&'a str, String> {
-    let mut result = String::new();
-    let (mut i, res) = not_special(i)?;
-    result.insert_str(result.len(), res);
-    if let Ok((input, res)) = special(i) {
-        let (_, tag_replaced) = replace_tag(res)?;
-        result.insert_str(result.len(), &tag_replaced);
-        i = input;
+fn parse(text: &str, config: &HashMap<String, Value>) -> StandardResult<String> {
+    let mut tera = Tera::default();
+    let mut context = Context::new();
+    for (key, value) in config {
+        context.insert(key, &value);
     }
 
-    Ok((i, result))
-}
+    for (filter_name, filter) in filters_plugins() {
+        tera.register_filter(filter_name, filter);
+    }
 
-// Parse special block
-// E.G `{{something}} here` => (`something`, ` here`)
-fn special(i: &str) -> nom::IResult<&str, &str> {
-    nom::sequence::delimited(
-        nom::bytes::complete::tag(IN_ISOLATOR),
-        is_not_isolator_and_trim,
-        nom::bytes::complete::tag(OUT_ISOLATOR),
-    )(i)
-}
-
-// Anything not IN_ISOLATOR
-// E.G `something {{example}}` => (`example}}`, `something `)
-fn not_special(i: &str) -> nom::IResult<&str, &str> {
-    nom::bytes::complete::is_not(IN_ISOLATOR)(i)
-}
-
-// Anything not OUT_ISOLATOR (and trim whitespaces)
-// E.G ` example }} something` => (`example`, ` something`)
-fn is_not_isolator_and_trim(i: &str) -> nom::IResult<&str, &str> {
-    nom::bytes::complete::is_not(OUT_ISOLATOR)(i).map(|(i, res)| (i, res.trim()))
-}
-
-// Parse => token and optional plugin command
-// E.G `token` => (`token`, None)
-// E.G `token | command` => (`token`, Some(`command`))
-fn parse_token_command(i: &str) -> nom::IResult<&str, Option<&str>> {
-    let (i, token) = nom::bytes::complete::is_not(SEPARATOR)(i)?;
-    let command: nom::IResult<&str, &str, nom::error::VerboseError<&str>> =
-        nom::bytes::complete::tag(SEPARATOR)(i);
-    let command = command.ok().map(|(command, _)| command.trim());
-    Ok((token.trim(), command))
-}
-
-// * Replace tag from config and apply plugin function if exist
-fn replace_tag(i: &str) -> nom::IResult<&str, String> {
-    let (token, command) = parse_token_command(i)?;
-
-    let map: std::collections::HashMap<&str, &str> = [
-        ("name", "Johan Planchon"),
-        ("Licence", "MIT"),
-        ("test", "middle"),
-    ]
-    .iter()
-    .cloned()
-    .collect();
-
-    let value = map.get(token).unwrap_or_else(|| -> &&str {
-        eprintln!("Key not found in config");
-        &""
-    });
-
-    Ok(("", plugins(value, command.unwrap_or(""))))
+    Ok(tera.render_str(text, &context)?)
 }
 
 // * Plugins
@@ -88,11 +67,9 @@ fn replace_tag(i: &str) -> nom::IResult<&str, String> {
 use crate::plugins::case_mod;
 
 #[allow(unused_variables)]
-fn plugins(i: &str, command: &str) -> String {
-    #[allow(unused_mut)]
-    let mut result = String::from(i);
+fn filters_plugins<'a>() -> Vec<(&'static str, TeraFilter<'a>)> {
+    let mut result = Vec::new();
     #[cfg(feature = "case_mod")]
-    case_mod::parse(&mut result, command);
-
+    result.extend(case_mod::all());
     result
 }
