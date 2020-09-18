@@ -5,5 +5,6 @@ error_chain! {
         TomlDeser(::toml::de::Error);
         Tera(::tera::Error);
         WalkDir(::walkdir::Error);
+        StripPrefix(::std::path::StripPrefixError);
     }
 }

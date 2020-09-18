@@ -1,7 +1,9 @@
 use crate::StandardResult;
 use clap::{App, AppSettings, Arg};
 use console::style;
+use dialoguer::Confirm;
 use glob::Pattern;
+use indicatif::ProgressBar;
 use std::path::PathBuf;
 use walkdir::{DirEntry, WalkDir};
 
@@ -16,18 +18,29 @@ pub fn init_app<'a, 'b>() -> App<'a, 'b> {
         .author(crate_authors!())
         .bin_name("boilrs")
         .version(crate_version!())
-        .usage("boilrs -t <TEMPLATE_PATH> -o <OUTPUT_PATH>")
+        .usage("boilrs --name <NAME> --template <TEMPLATE_PATH> --output <OUTPUT_PATH>")
         .arg(
             Arg::with_name("template")
+                .long("template")
                 .short("t")
                 .required(true)
-                .takes_value(true),
+                .takes_value(true)
+                .display_order(3),
         )
         .arg(
             Arg::with_name("output")
+                .long("output")
                 .short("o")
+                .takes_value(true)
+                .display_order(2),
+        )
+        .arg(
+            Arg::with_name("name")
+                .long("name")
+                .short("n")
                 .required(true)
-                .takes_value(true),
+                .takes_value(true)
+                .display_order(1),
         )
         .settings(&[
             AppSettings::ArgRequiredElseHelp,
@@ -41,11 +54,15 @@ pub fn scan_dir(template_dir: &PathBuf) -> StandardResult<(Vec<DirEntry>, Vec<Di
     let mut files = Vec::new();
     let rules = generate_ignore_rules(template_dir);
 
-    for entry in WalkDir::new(template_dir.join("template"))
+    let walkdir_iter = WalkDir::new(template_dir.join("template"))
         .follow_links(true)
         .into_iter()
-        .filter_entry(|d| filters(d, &rules, template_dir))
-    {
+        .filter_entry(|d| filters(d, &rules, template_dir));
+
+    let progress = ProgressBar::new_spinner();
+    progress.set_message("[1/4] Scanning files and folders in template...");
+
+    for entry in progress.wrap_iter(walkdir_iter) {
         match entry {
             Ok(e) => {
                 if e.path().is_file() {
@@ -58,6 +75,7 @@ pub fn scan_dir(template_dir: &PathBuf) -> StandardResult<(Vec<DirEntry>, Vec<Di
         };
     }
 
+    progress.finish_and_clear();
     Ok((folders, files))
 }
 
@@ -93,6 +111,21 @@ pub fn notify(info: &str) {
     println!("{} {}", style("[✓]").bold().green(), style(info).bold())
 }
 
-pub fn alert(info: &str) {
+pub fn error(info: &str) {
     eprintln!("{} {}", style("[✗]").bold().red(), style(info).bold())
+}
+
+pub fn alert(info: &str) {
+    println!("{} {}", style("[!]").bold().yellow(), style(info).bold())
+}
+
+pub fn ask(question: &str) -> StandardResult<bool> {
+    Ok(Confirm::new()
+        .default(crate::DEFAULT_ASK)
+        .with_prompt(format!(
+            "{} {}",
+            style("[?]").bold().blue(),
+            style(question).bold()
+        ))
+        .interact()?)
 }
