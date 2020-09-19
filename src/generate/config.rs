@@ -41,10 +41,10 @@ fn ask_with_default_string(key: &str, default: &str) -> StandardResult<String> {
         .show_default(false)
         .with_prompt(format!(
             "{} {} \"{}\" {}",
-            style("[?]").bold().blue(),
+            style("[?]").bold().cyan(),
             style("Please choose a value for").bold(),
             style(key).bold(),
-            style(format!("[default: \"{}\"]", default)).blue()
+            style(format!("[default: \"{}\"]", default)).cyan()
         ))
         .interact()?)
 }
@@ -63,14 +63,14 @@ fn ask_within_array(key: &str, arr: &[toml::Value]) -> StandardResult<String> {
                 .default(0)
                 .with_prompt(format!(
                     "{} {} \"{}\" {}",
-                    style("[?]").bold().blue(),
+                    style("[?]").bold().cyan(),
                     style("Please choose an option for").bold(),
                     style(key).bold(),
                     style(format!(
                         "[default: \"{}\"]",
                         arr.first().expect("Array in config is empty")
                     ))
-                    .blue()
+                    .cyan()
                 ))
                 .items(&arr)
                 .interact()?,
@@ -85,10 +85,10 @@ fn ask_confirmation(key: &str, default: &bool) -> StandardResult<bool> {
         .show_default(false)
         .with_prompt(format!(
             "{} {} \"{}\" {}",
-            style("[?]").bold().blue(),
+            style("[?]").bold().cyan(),
             style("Please choose (true/false) for").bold(),
             style(key).bold(),
-            style(format!("[default: \"{}\"]", default)).blue()
+            style(format!("[default: \"{}\"]", default)).cyan()
         ))
         .interact()?)
 }

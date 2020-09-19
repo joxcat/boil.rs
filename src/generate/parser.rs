@@ -59,12 +59,17 @@ fn parse(text: &str, config: &HashMap<String, Value>) -> StandardResult<String> 
         tera.register_filter(filter_name, filter);
     }
 
-    Ok(tera.render_str(text, &context)?)
+    Ok(tera.render_str(text, &context).map_err(|e| {
+        error(&format!("Error while rendering template: {:?}", e.source()));
+        e
+    })?)
 }
 
 // * Plugins
 #[cfg(feature = "case_mod")]
 use super::plugins::case_mod;
+use crate::app::error;
+use std::error::Error;
 
 #[allow(unused_mut)]
 #[allow(clippy::let_and_return)]

@@ -8,6 +8,7 @@ description = "Small util to generate projets from templates"
 [features]
 case_mod = ["convert_case"]
 all_plugins = ["case_mod"]
+smaller = []
 
 [dependencies]
 # Parsing files
@@ -16,6 +17,7 @@ walkdir = "2.3"
 glob = "0.3"
 # Config files
 toml = "0.5"
+dirs = "3.0"
 # kv = "0.22" # To store downloaded templates
 # zip = "0.5" # To decompress downloaded templates
 # git2 = { version = "0.13", optional = true } # To download from any git repo (feature git)
@@ -30,3 +32,9 @@ human-panic = "1.0"
 error-chain = "0.12"
 # Plugins
 convert_case = { version = "0.4", optional = true }
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 'z'
+panic = 'abort'

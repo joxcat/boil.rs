@@ -1,8 +1,8 @@
 use super::parser::FileContent;
-use crate::app::{alert, error};
-use crate::StandardResult;
+use crate::app::overwrite_if_exist;
+use crate::{StandardResult, TEMPLATE_DIR_NAME};
 use indicatif::ProgressBar;
-use std::fs::{create_dir, remove_dir_all, remove_file, File};
+use std::fs::{create_dir, File};
 use std::io::Write;
 use std::path::PathBuf;
 use walkdir::DirEntry;
@@ -12,34 +12,17 @@ pub fn reconstruct(
     path: &PathBuf,
     folders: &[DirEntry],
 ) -> StandardResult<()> {
-    let full_path_str = path.to_str().expect("Cannot display output path");
-
-    if path.exists() {
-        if crate::app::ask(&format!(
-            "File/Directory already exist at \"{}\" do you want to overwrite it?",
-            full_path_str
-        ))? {
-            if path.is_dir() {
-                alert(&format!(
-                    "Overwriting dir recursively at \"{}\"",
-                    full_path_str
-                ));
-                remove_dir_all(&path)?;
-            } else {
-                alert(&format!("Overwriting file at \"{}\"", full_path_str));
-                remove_file(&path)?;
-            }
-        } else {
-            error("Please change output path if you do not want to overwrite it!");
-            std::process::exit(2);
-        }
-    }
+    overwrite_if_exist(&path)?;
     create_dir(path)?;
     let progress = ProgressBar::new_spinner();
     progress.set_message("[3/4] Reconstructing template directories...");
 
     for folder in progress.wrap_iter(folders.iter()) {
-        let new_path = path.join(folder.path().strip_prefix(from_path.join("template"))?);
+        let new_path = path.join(
+            folder
+                .path()
+                .strip_prefix(from_path.join(TEMPLATE_DIR_NAME))?,
+        );
         create_dir(new_path)?;
     }
 

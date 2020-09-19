@@ -1,5 +1,5 @@
 use crate::app::alert;
-use crate::StandardResult;
+use crate::{StandardResult, TEMPLATE_DIR_NAME, TEMPLATE_IGNORE_FILE};
 use glob::Pattern;
 use indicatif::ProgressBar;
 use std::path::PathBuf;
@@ -10,7 +10,7 @@ pub fn scan_dir(template_dir: &PathBuf) -> StandardResult<(Vec<DirEntry>, Vec<Di
     let mut files = Vec::new();
     let rules = generate_ignore_rules(template_dir);
 
-    let walkdir_iter = WalkDir::new(template_dir.join("template"))
+    let walkdir_iter = WalkDir::new(template_dir.join(TEMPLATE_DIR_NAME))
         .follow_links(true)
         .into_iter()
         .filter_entry(|d| filters(d, &rules, template_dir));
@@ -23,7 +23,7 @@ pub fn scan_dir(template_dir: &PathBuf) -> StandardResult<(Vec<DirEntry>, Vec<Di
             Ok(e) => {
                 if e.path().is_file() {
                     files.push(e);
-                } else if e.path() != template_dir.join("template") {
+                } else if e.path() != template_dir.join(TEMPLATE_DIR_NAME) {
                     folders.push(e);
                 }
             }
@@ -37,7 +37,7 @@ pub fn scan_dir(template_dir: &PathBuf) -> StandardResult<(Vec<DirEntry>, Vec<Di
 
 fn filters(entry: &DirEntry, ignore_rules: &[Pattern], base_path: &PathBuf) -> bool {
     for rule in ignore_rules {
-        if let Ok(stripped_path) = entry.path().strip_prefix(base_path.join("template")) {
+        if let Ok(stripped_path) = entry.path().strip_prefix(base_path.join(TEMPLATE_DIR_NAME)) {
             if rule.matches_path(stripped_path) {
                 return false;
             }
@@ -48,13 +48,13 @@ fn filters(entry: &DirEntry, ignore_rules: &[Pattern], base_path: &PathBuf) -> b
 
 fn generate_ignore_rules(template_dir: &PathBuf) -> Vec<Pattern> {
     let mut ignore_rules = Vec::new();
-    if let Ok(f) = std::fs::read_to_string(template_dir.join(".ignore")) {
+    if let Ok(f) = std::fs::read_to_string(template_dir.join(TEMPLATE_IGNORE_FILE)) {
         for line in f.lines() {
             match Pattern::new(line) {
                 Ok(p) => ignore_rules.push(p),
                 Err(_) => alert(&format!(
-                    "\"{}\" in .ignore is not a valid unix pattern",
-                    line
+                    "\"{}\" in {} is not a valid unix pattern",
+                    line, TEMPLATE_IGNORE_FILE
                 )),
             };
         }

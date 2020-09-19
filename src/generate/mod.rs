@@ -1,4 +1,4 @@
-use crate::{app, StandardResult};
+use crate::{app, StandardResult, TEMPLATE_CONFIG_NAME};
 use clap::ArgMatches;
 use std::env::current_dir;
 use std::path::PathBuf;
@@ -28,13 +28,13 @@ pub fn generate(args: &ArgMatches) -> StandardResult<()> {
     ));
     if !output_path.is_dir() {
         app::error("Output path is not a directory!");
-        std::process::exit(1);
+        std::process::exit(-1);
     }
 
     let name = args.value_of("name").expect("Name arg not found");
 
     // * Generate placeholders from project.toml
-    let config = config::parse_config(template_path.join("project.toml"))?;
+    let config = config::parse_config(template_path.join(TEMPLATE_CONFIG_NAME))?;
 
     // * Scanning files and folders in template dir
     let (folder_entries, file_entries) = scanner::scan_dir(&template_path)?;

@@ -18,9 +18,22 @@ mod new;
 /* === LOCAL IMPORTS === */
 
 pub const DEFAULT_ASK: bool = false;
-pub const INSTALL_DIR: &str = "$HOME/.boilrs";
+// Install dir is in the $HOME user directory
+pub const INSTALL_DIR: &str = ".boilrs";
+pub const TEMPLATE_IGNORE_FILE: &str = ".ignore";
+pub const TEMPLATE_DIR_NAME: &str = "template";
+pub const TEMPLATE_CONFIG_NAME: &str = "project.toml";
 
 pub type StandardResult<T> = Result<T, errors::Error>;
+
+/* SIZE OPTIMISATION */
+#[cfg(feature = "smaller")]
+use std::alloc::System;
+
+#[cfg(feature = "smaller")]
+#[global_allocator]
+static A: System = System;
+/* SIZE OPTIMISATION */
 
 fn main() -> StandardResult<()> {
     setup_panic!();
@@ -30,11 +43,12 @@ fn main() -> StandardResult<()> {
 
     match cli.subcommand() {
         ("generate", Some(args)) => generate::generate(&args)?,
-        ("new", Some(_args)) => unimplemented!(),
-        ("install", Some(_args)) => unimplemented!(),
+        ("new", Some(args)) => new::new(&args)?,
+        ("install", Some(args)) => install::install(args)?,
         ("uninstall", Some(_args)) => unimplemented!(),
         ("list", Some(_args)) => unimplemented!(),
-        ("download", Some(_args)) => unimplemented!(),
+        // ("download", Some(_args)) => unimplemented!(),
+        // ("update", Some(_args)) => unimplemented!(),
         _ => (),
     }
 
