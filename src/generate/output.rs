@@ -1,5 +1,5 @@
+use super::parser::FileContent;
 use crate::app::{alert, error};
-use crate::parser::FileContent;
 use crate::StandardResult;
 use indicatif::ProgressBar;
 use std::fs::{create_dir, remove_dir_all, remove_file, File};

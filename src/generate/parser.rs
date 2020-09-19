@@ -64,8 +64,10 @@ fn parse(text: &str, config: &HashMap<String, Value>) -> StandardResult<String> 
 
 // * Plugins
 #[cfg(feature = "case_mod")]
-use crate::plugins::case_mod;
+use super::plugins::case_mod;
 
+#[allow(unused_mut)]
+#[allow(clippy::let_and_return)]
 #[allow(unused_variables)]
 fn filters_plugins<'a>() -> Vec<(&'static str, TeraFilter<'a>)> {
     let mut result = Vec::new();

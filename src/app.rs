@@ -1,110 +1,77 @@
 use crate::StandardResult;
-use clap::{App, AppSettings, Arg};
+use clap::{App, AppSettings, Arg, SubCommand};
 use console::style;
 use dialoguer::Confirm;
-use glob::Pattern;
-use indicatif::ProgressBar;
-use std::path::PathBuf;
-use walkdir::{DirEntry, WalkDir};
 
-/*
-1. Need create blank
-2. Need download from github / git+ssh
-3. Need list downloaded
-*/
+const GLOBAL_SETTINGS: &[AppSettings] = &[
+    AppSettings::ArgRequiredElseHelp,
+    AppSettings::ColoredHelp,
+    AppSettings::ColorAuto,
+];
+
 pub fn init_app<'a, 'b>() -> App<'a, 'b> {
     App::new("boilrs")
         .about(crate_description!())
         .author(crate_authors!())
         .bin_name("boilrs")
         .version(crate_version!())
-        .usage("boilrs --name <NAME> --template <TEMPLATE_PATH> --output <OUTPUT_PATH>")
-        .arg(
-            Arg::with_name("template")
-                .long("template")
-                .short("t")
-                .required(true)
-                .takes_value(true)
-                .display_order(3),
+        .subcommand(
+            SubCommand::with_name("new")
+                .visible_aliases(&["n", "blank", "create"])
+                .settings(GLOBAL_SETTINGS),
         )
-        .arg(
-            Arg::with_name("output")
-                .long("output")
-                .short("o")
-                .takes_value(true)
-                .display_order(2),
+        .subcommand(
+            SubCommand::with_name("install")
+                .visible_aliases(&["i", "add"])
+                .settings(GLOBAL_SETTINGS),
         )
-        .arg(
-            Arg::with_name("name")
-                .long("name")
-                .short("n")
-                .required(true)
-                .takes_value(true)
-                .display_order(1),
+        .subcommand(
+            SubCommand::with_name("download")
+                .visible_aliases(&["d", "dl"])
+                .settings(GLOBAL_SETTINGS),
         )
-        .settings(&[
-            AppSettings::ArgRequiredElseHelp,
-            AppSettings::ColoredHelp,
-            AppSettings::ColorAuto,
-        ])
-}
-
-pub fn scan_dir(template_dir: &PathBuf) -> StandardResult<(Vec<DirEntry>, Vec<DirEntry>)> {
-    let mut folders = Vec::new();
-    let mut files = Vec::new();
-    let rules = generate_ignore_rules(template_dir);
-
-    let walkdir_iter = WalkDir::new(template_dir.join("template"))
-        .follow_links(true)
-        .into_iter()
-        .filter_entry(|d| filters(d, &rules, template_dir));
-
-    let progress = ProgressBar::new_spinner();
-    progress.set_message("[1/4] Scanning files and folders in template...");
-
-    for entry in progress.wrap_iter(walkdir_iter) {
-        match entry {
-            Ok(e) => {
-                if e.path().is_file() {
-                    files.push(e);
-                } else if e.path() != template_dir.join("template") {
-                    folders.push(e);
-                }
-            }
-            Err(e) => return Err(e.into()),
-        };
-    }
-
-    progress.finish_and_clear();
-    Ok((folders, files))
-}
-
-fn filters(entry: &DirEntry, ignore_rules: &[Pattern], base_path: &PathBuf) -> bool {
-    for rule in ignore_rules {
-        if let Ok(stripped_path) = entry.path().strip_prefix(base_path.join("template")) {
-            if rule.matches_path(stripped_path) {
-                return false;
-            }
-        }
-    }
-    true
-}
-
-fn generate_ignore_rules(template_dir: &PathBuf) -> Vec<Pattern> {
-    let mut ignore_rules = Vec::new();
-    if let Ok(f) = std::fs::read_to_string(template_dir.join(".ignore")) {
-        for line in f.lines() {
-            match Pattern::new(line) {
-                Ok(p) => ignore_rules.push(p),
-                Err(_) => alert(&format!(
-                    "\"{}\" in .ignore is not a valid unix pattern",
-                    line
-                )),
-            };
-        }
-    }
-
-    ignore_rules
+        .subcommand(
+            SubCommand::with_name("list")
+                .visible_aliases(&["l", "ls"])
+                .settings(GLOBAL_SETTINGS),
+        )
+        .subcommand(
+            SubCommand::with_name("uninstall")
+                .visible_aliases(&["u", "rm", "remove"])
+                .settings(GLOBAL_SETTINGS),
+        )
+        .subcommand(
+            SubCommand::with_name("generate")
+                .visible_aliases(&["g", "gen"])
+                .settings(GLOBAL_SETTINGS)
+                .arg(
+                    Arg::with_name("template")
+                        .long("template")
+                        .short("t")
+                        .value_name("TEMPLATE_NAME")
+                        .required(true)
+                        .takes_value(true)
+                        .display_order(3),
+                )
+                .arg(
+                    Arg::with_name("output")
+                        .long("output")
+                        .short("o")
+                        .value_name("OUTPUT_DIRECTORY")
+                        .takes_value(true)
+                        .display_order(2),
+                )
+                .arg(
+                    Arg::with_name("name")
+                        .long("name")
+                        .short("n")
+                        .value_name("NAME")
+                        .required(true)
+                        .takes_value(true)
+                        .display_order(1),
+                ),
+        )
+        .settings(GLOBAL_SETTINGS)
 }
 
 pub fn notify(info: &str) {
