@@ -21,22 +21,42 @@ pub fn install(args: &ArgMatches) -> StandardResult<()> {
 
     let template_name = args.value_of("name").expect("Name cli arg not found");
 
-    get_templates(
-        &PathBuf::from(home_dir().expect("Cannot find HOME directory"))
+    let templates = get_templates(
+        &home_dir()
+            .expect("Cannot find HOME directory")
             .join(INSTALL_DIR)
             .join("templates.toml"),
     )?;
+
+    println!("{:?}", templates);
 
     Ok(())
 }
 
 pub fn get_templates(path: &PathBuf) -> StandardResult<HashMap<String, String>> {
-    let templates = HashMap::new();
+    let mut templates = HashMap::new();
 
     if let Some(Value::Array(templates_raw)) =
         toml::from_str::<Value>(&read_to_string(path)?)?.get("template")
     {
-        println!("{:?}", templates_raw);
+        for template_table in templates_raw {
+            if let Value::Table(template) = template_table {
+                templates.insert(
+                    template
+                        .get("name")
+                        .expect("Cannot read correctly templates.toml")
+                        .as_str()
+                        .unwrap()
+                        .to_string(),
+                    template
+                        .get("path")
+                        .expect("Cannot read correctly templates.toml")
+                        .as_str()
+                        .unwrap()
+                        .to_string(),
+                );
+            }
+        }
     }
 
     Ok(templates)
