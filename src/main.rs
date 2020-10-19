@@ -36,21 +36,21 @@ static A: System = System;
 /* SIZE OPTIMISATION */
 
 fn main() -> StandardResult<()> {
-	setup_panic!();
+    setup_panic!();
 
-	// * Creating cli app
-	let cli = app::init_app().get_matches();
+    // * Creating cli app
+    let cli = app::init_app().get_matches();
 
-	match cli.subcommand() {
-		("generate", Some(args)) => generate::generate(&args)?,
-		("new", Some(args)) => new::new(&args)?,
-		("install", Some(args)) => install::install(args)?,
-		("uninstall", Some(_args)) => unimplemented!(),
-		("list", Some(_args)) => unimplemented!(),
-		// ("download", Some(_args)) => unimplemented!(),
-		// ("update", Some(_args)) => unimplemented!(),
-		_ => (),
-	}
+    match cli.subcommand() {
+        ("generate", Some(args)) => generate::generate(&args)?,
+        ("new", Some(args)) => new::new(&args)?,
+        ("install", Some(args)) => install::install(args)?,
+        ("uninstall", Some(_args)) => unimplemented!(),
+        ("list", Some(_args)) => unimplemented!(),
+        // ("download", Some(_args)) => unimplemented!(),
+        // ("update", Some(_args)) => unimplemented!(),
+        _ => (),
+    }
 
-	Ok(())
+    Ok(())
 }
