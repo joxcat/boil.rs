@@ -4,7 +4,7 @@ use clap::ArgMatches;
 use dirs::home_dir;
 use std::collections::HashMap;
 use std::env::current_dir;
-use std::fs::read_to_string;
+use std::fs::{read_to_string};
 use std::path::PathBuf;
 use toml::Value;
 
@@ -32,6 +32,10 @@ pub fn install(args: &ArgMatches) -> StandardResult<()> {
 		alert("This template is already installed");
 		overwrite_if_exist(&install_directory_path.join(path), false)?;
 	}
+
+	// Recursive copy directory
+
+	// Write templates.toml
 
 	println!("{:?}", template_full_path);
 	println!("{:?}", templates);
