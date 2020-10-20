@@ -1,4 +1,5 @@
 use crate::{StandardResult, INSTALL_DIR};
+use crate::errors::BoilrError;
 use clap::{App, AppSettings, Arg, SubCommand};
 use console::style;
 use dialoguer::Confirm;
@@ -148,7 +149,7 @@ pub fn ask(question: &str) -> StandardResult<bool> {
 }
 
 pub fn overwrite_if_exist(path: &PathBuf, die_if_dont: bool) -> StandardResult<()> {
-	let path_str = path.to_str().expect("Cannot display output path");
+	let path_str = path.to_str().ok_or(BoilrError::StrError)?;
 
 	if path.exists() {
 		if crate::app::ask(&format!(
@@ -164,7 +165,7 @@ pub fn overwrite_if_exist(path: &PathBuf, die_if_dont: bool) -> StandardResult<(
 			}
 		} else if die_if_dont {
 			error("Please change output path if you do not want to overwrite it!");
-			std::process::exit(-2);
+			std::process::exit(-1);
 		}
 	}
 	Ok(())
@@ -184,7 +185,7 @@ pub fn check_if_install_dir_exist() -> StandardResult<()> {
 			"Install dir (\"{}\") is not a directory",
 			INSTALL_DIR
 		));
-		std::process::exit(-3);
+		return Err(BoilrError::NotADirectory { path }.into());
 	}
 
 	Ok(())
