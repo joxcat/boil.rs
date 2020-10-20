@@ -65,12 +65,6 @@ pub fn init_app<'a, 'b>() -> App<'a, 'b> {
 				),
 		)
 		.subcommand(
-			SubCommand::with_name("update")
-				.visible_alias("up")
-				.settings(GLOBAL_SETTINGS)
-				.about("Update the cache of a boilrs template"),
-		)
-		.subcommand(
 			SubCommand::with_name("download")
 				.visible_aliases(&["d", "dl"])
 				.settings(GLOBAL_SETTINGS)
@@ -90,7 +84,7 @@ pub fn init_app<'a, 'b>() -> App<'a, 'b> {
 		)
 		.subcommand(
 			SubCommand::with_name("generate")
-				.visible_aliases(&["g", "gen"])
+				.visible_aliases(&["g", "gen", "use"])
 				.settings(GLOBAL_SETTINGS)
 				.about("Generate project from template")
 				.arg(
