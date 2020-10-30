@@ -1,19 +1,12 @@
-use crate::app::{notify, overwrite_if_exist};
+use crate::app::notify;
 use crate::{app, StandardResult, TEMPLATE_CONFIG_NAME, TEMPLATE_DIR_NAME, TEMPLATE_IGNORE_FILE};
 use crate::errors::BoilrError;
+use crate::utils::{overwrite_if_exist, to_output_path};
 use clap::ArgMatches;
-use std::env::current_dir;
 use std::fs::{create_dir, File};
-use std::path::PathBuf;
 
 pub fn new(args: &ArgMatches) -> StandardResult<()> {
-	let output_path = PathBuf::from(Option::unwrap_or(
-		args.value_of("output"),
-		current_dir()
-			.map_err(|_| BoilrError::AccessCurrentDirError)?
-			.to_str()
-			.ok_or(BoilrError::StrError)?
-	));
+	let output_path = to_output_path(args)?;
 
 	let template_name = args.value_of("name").ok_or(BoilrError::ArgNotFound)?;
 

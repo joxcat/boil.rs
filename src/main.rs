@@ -16,6 +16,7 @@ mod errors;
 mod generate;
 mod install;
 mod new;
+mod utils;
 /* === LOCAL IMPORTS === */
 
 pub const DEFAULT_ASK: bool = false;

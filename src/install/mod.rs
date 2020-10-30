@@ -1,5 +1,6 @@
-use crate::app::{alert, check_if_install_dir_exist, overwrite_if_exist};
+use crate::app::alert;
 use crate::{StandardResult, INSTALL_DIR};
+use crate::utils::{overwrite_if_exist, check_if_install_dir_exist};
 use clap::ArgMatches;
 use dirs::home_dir;
 use std::collections::HashMap;

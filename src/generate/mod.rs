@@ -1,7 +1,7 @@
 use crate::errors::BoilrError;
 use crate::{app, StandardResult, TEMPLATE_CONFIG_NAME};
+use crate::utils::to_output_path;
 use clap::ArgMatches;
-use std::env::current_dir;
 use std::path::PathBuf;
 
 mod config;
@@ -19,13 +19,7 @@ pub fn generate(args: &ArgMatches) -> StandardResult<()> {
 		.to_str()
 		.ok_or(BoilrError::StrError)?;
 
-	let output_path = PathBuf::from(Option::unwrap_or(
-		args.value_of("output"),
-		current_dir()
-			.map_err(|_| BoilrError::AccessCurrentDirError)?
-			.to_str()
-			.ok_or(BoilrError::StrError)?
-	));
+	let output_path = to_output_path(args)?;
 	if !output_path.is_dir() {
 		app::error("Output path is not a directory!");
 		return Err(BoilrError::NotADirectory { path: output_path }.into());

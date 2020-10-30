@@ -1,5 +1,5 @@
 use super::parser::FileContent;
-use crate::app::overwrite_if_exist;
+use crate::utils::overwrite_if_exist;
 use crate::{StandardResult, TEMPLATE_DIR_NAME};
 use indicatif::ProgressBar;
 use std::fs::{create_dir, File};
