@@ -1,3 +1,4 @@
+use crate::errors::BoilrError;
 use crate::StandardResult;
 use console::style;
 use dialoguer::{Confirm, Input, Select};
@@ -5,8 +6,18 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use tera::Value;
 
-pub fn parse_config(path: PathBuf) -> StandardResult<HashMap<String, Value>> {
-    let toml: toml::Value = toml::from_str(&std::fs::read_to_string(path)?)?;
+pub fn parse_config(path: &PathBuf) -> StandardResult<HashMap<String, Value>> {
+    let toml: toml::Value = toml::from_str(&std::fs::read_to_string(&path).map_err(|source| {
+        BoilrError::ReadError {
+            source,
+            path: path.clone(),
+        }
+    })?)
+    .map_err(|source| BoilrError::TomlDeserializeError {
+        source,
+        path: path.clone(),
+    })?;
+
     let mut config: HashMap<String, Value> = HashMap::new();
 
     for (key, val) in toml.as_table().expect("Cannot parse config file") {
@@ -36,7 +47,7 @@ pub fn parse_config(path: PathBuf) -> StandardResult<HashMap<String, Value>> {
 }
 
 fn ask_with_default_string(key: &str, default: &str) -> StandardResult<String> {
-    Ok(Input::<String>::new()
+    Input::<String>::new()
         .default(default.to_string())
         .show_default(false)
         .with_prompt(format!(
@@ -46,7 +57,8 @@ fn ask_with_default_string(key: &str, default: &str) -> StandardResult<String> {
             style(key).bold(),
             style(format!("[default: \"{}\"]", default)).cyan()
         ))
-        .interact()?)
+        .interact()
+        .map_err(|source| BoilrError::TerminalError { source })
 }
 
 fn ask_within_array(key: &str, arr: &[toml::Value]) -> StandardResult<String> {
@@ -73,14 +85,15 @@ fn ask_within_array(key: &str, arr: &[toml::Value]) -> StandardResult<String> {
                     .cyan()
                 ))
                 .items(&arr)
-                .interact()?,
+                .interact()
+                .map_err(|source| BoilrError::TerminalError { source })?,
         )
         .expect("Internal error while prompting for array element")
         .to_string())
 }
 
 fn ask_confirmation(key: &str, default: &bool) -> StandardResult<bool> {
-    Ok(Confirm::new()
+    Confirm::new()
         .default(*default)
         .show_default(false)
         .with_prompt(format!(
@@ -90,5 +103,6 @@ fn ask_confirmation(key: &str, default: &bool) -> StandardResult<bool> {
             style(key).bold(),
             style(format!("[default: \"{}\"]", default)).cyan()
         ))
-        .interact()?)
+        .interact()
+        .map_err(|source| BoilrError::TerminalError { source })
 }

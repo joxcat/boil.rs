@@ -8,12 +8,6 @@ use walkdir::DirEntry;
 pub type TeraFilter<'a> =
     &'a (dyn (Fn(&Value, &HashMap<String, Value>) -> Result<Value>) + Send + Sync);
 
-#[derive(Debug, Clone)]
-pub enum FileContent {
-    Text(String),
-    Binary(Vec<u8>),
-}
-
 pub fn process_files(
     template_path: &PathBuf,
     files: Vec<DirEntry>,
@@ -39,7 +33,12 @@ pub fn process_files(
                 file.path()
                     .strip_prefix(template_path.join("template"))?
                     .to_path_buf(),
-                FileContent::Binary(std::fs::read(file.path())?),
+                FileContent::Binary(std::fs::read(file.path()).map_err(|source| {
+                    BoilrError::ReadError {
+                        source,
+                        path: file.path().to_path_buf(),
+                    }
+                })?),
             )),
         }
     }
@@ -69,6 +68,8 @@ fn parse(text: &str, config: &HashMap<String, Value>) -> StandardResult<String> 
 #[cfg(feature = "case_mod")]
 use super::plugins::case_mod;
 use crate::app::error;
+use crate::errors::BoilrError;
+use crate::utils::types::FileContent;
 use std::error::Error;
 
 #[allow(unused_mut)]

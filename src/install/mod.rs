@@ -1,74 +1,97 @@
-use crate::app::alert;
-use crate::{StandardResult, INSTALL_DIR};
-use crate::utils::{overwrite_if_exist, check_if_install_dir_exist};
+use crate::app::{alert, error};
+use crate::errors::BoilrError;
+use crate::utils::types::{Config, Template};
+use crate::utils::{check_if_install_dir_exist, prompt_overwrite_if_exist, recursive_copy};
+use crate::{StandardResult, INSTALL_DIR, TEMPLATE_CONFIG_NAME};
 use clap::ArgMatches;
 use dirs::home_dir;
-use std::collections::HashMap;
 use std::env::current_dir;
-use std::fs::{read_to_string};
+use std::fs::{read_to_string, write};
 use std::path::PathBuf;
-use toml::Value;
 
 pub fn install(args: &ArgMatches) -> StandardResult<()> {
-	check_if_install_dir_exist()?;
-	let install_directory_path = &home_dir()
-		.expect("Cannot find HOME directory")
-		.join(INSTALL_DIR);
+    check_if_install_dir_exist()?;
+    let install_directory_path = &home_dir()
+        .expect("Cannot find HOME directory")
+        .join(INSTALL_DIR);
 
-	let template_path = PathBuf::from(Option::unwrap_or(
-		args.value_of("path"),
-		current_dir()
-			.expect("Cannot access current directory")
-			.to_str()
-			.expect("Cannot convert current directory path to string"),
-	));
+    let mut template_path = PathBuf::from(Option::unwrap_or(
+        args.value_of("path"),
+        current_dir()
+            .expect("Cannot access current directory")
+            .to_str()
+            .ok_or(BoilrError::StrError)?,
+    ));
 
-	let template_name = args.value_of("name").expect("Name cli arg not found");
+    let template_name = args.value_of("name").expect("Name cli arg not found");
 
-	let template_full_path = template_path.join(template_name);
+    if !template_path.join(TEMPLATE_CONFIG_NAME).is_file() {
+        template_path = template_path.join(template_name);
+    }
 
-	let templates = get_templates(&install_directory_path.join("templates.toml"))?;
+    if !template_path.join(TEMPLATE_CONFIG_NAME).is_file() {
+        error(
+            &[
+                "Cannot find any valid template at ",
+                template_path.to_str().ok_or(BoilrError::StrError)?,
+            ]
+            .concat(),
+        );
+        return Err(BoilrError::RuntimeError);
+    }
 
-	if let Some(path) = templates.get(template_name) {
-		alert("This template is already installed");
-		overwrite_if_exist(&install_directory_path.join(path), false)?;
-	}
+    let mut config = get_config(&install_directory_path.join("templates.toml"))?;
+    let templates = &config.templates;
 
-	// Recursive copy directory
+    if let Some(template) = templates.iter().find(|t| t.name == template_name) {
+        alert("This template is already installed");
+        prompt_overwrite_if_exist(&install_directory_path.join(&template.path), false)?;
+        config.templates.retain(|t| t.name != template_name);
+    }
 
-	// Write templates.toml
+    // Recursive copy directory
+    let target_path = install_directory_path.join("templates").join(template_name);
 
-	println!("{:?}", template_full_path);
-	println!("{:?}", templates);
+    recursive_copy(&template_path, &target_path).map_err(|source| BoilrError::CopyError {
+        source: Box::new(source),
+        from_path: template_path.clone(),
+        to_path: target_path.clone(),
+    })?;
 
-	Ok(())
+    // Write templates.toml
+
+    config.templates.push(Template {
+        name: template_name.to_owned(),
+        path: target_path.to_str().ok_or(BoilrError::StrError)?.to_owned(),
+    });
+
+    write(
+        &install_directory_path.join("templates.toml"),
+        toml::to_string(&config)
+            .map_err(|source| BoilrError::TomlSerializeError {
+                source,
+                path: install_directory_path.join("templates.toml"),
+            })?
+            .as_bytes(),
+    )
+    .map_err(|source| BoilrError::WriteError {
+        source,
+        path: install_directory_path.join("templates.toml"),
+    })?;
+
+    Ok(())
 }
 
-pub fn get_templates(path: &PathBuf) -> StandardResult<HashMap<String, String>> {
-	let mut templates = HashMap::new();
-
-	if let Some(Value::Array(templates_raw)) =
-		toml::from_str::<Value>(&read_to_string(path)?)?.get("template")
-	{
-		for template_table in templates_raw {
-			if let Value::Table(template) = template_table {
-				templates.insert(
-					template
-						.get("name")
-						.expect("Cannot read correctly templates.toml")
-						.as_str()
-						.unwrap()
-						.to_string(),
-					template
-						.get("path")
-						.expect("Cannot read correctly templates.toml")
-						.as_str()
-						.unwrap()
-						.to_string(),
-				);
-			}
-		}
-	}
-
-	Ok(templates)
+pub fn get_config(path: &PathBuf) -> StandardResult<Config> {
+    let config = toml::from_str::<Config>(&read_to_string(path).map_err(|source| {
+        BoilrError::ReadError {
+            source,
+            path: path.clone(),
+        }
+    })?)
+    .map_err(|source| BoilrError::TomlDeserializeError {
+        source,
+        path: path.clone(),
+    })?;
+    Ok(config)
 }

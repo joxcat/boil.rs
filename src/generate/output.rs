@@ -1,9 +1,9 @@
-use super::parser::FileContent;
-use crate::utils::overwrite_if_exist;
+use crate::errors::BoilrError;
+use crate::utils::types::FileContent;
+use crate::utils::{create_and_write_file, prompt_overwrite_if_exist};
 use crate::{StandardResult, TEMPLATE_DIR_NAME};
 use indicatif::ProgressBar;
-use std::fs::{create_dir, File};
-use std::io::Write;
+use std::fs::create_dir;
 use std::path::PathBuf;
 use walkdir::DirEntry;
 
@@ -12,8 +12,12 @@ pub fn reconstruct(
     path: &PathBuf,
     folders: &[DirEntry],
 ) -> StandardResult<()> {
-    overwrite_if_exist(&path, true)?;
-    create_dir(path)?;
+    prompt_overwrite_if_exist(&path, true)?;
+    create_dir(path).map_err(|source| BoilrError::WriteError {
+        source,
+        path: path.clone(),
+    })?;
+
     let progress = ProgressBar::new_spinner();
     progress.set_message("[3/4] Reconstructing template directories...");
 
@@ -23,7 +27,10 @@ pub fn reconstruct(
                 .path()
                 .strip_prefix(from_path.join(TEMPLATE_DIR_NAME))?,
         );
-        create_dir(new_path)?;
+        create_dir(&new_path).map_err(|source| BoilrError::WriteError {
+            source,
+            path: new_path.to_path_buf(),
+        })?;
     }
 
     progress.finish_and_clear();
@@ -35,14 +42,8 @@ pub fn write(path: &PathBuf, files: &[(PathBuf, FileContent)]) -> StandardResult
     progress.set_message("[4/4] Writing files to output...");
 
     for (file_path, file_content) in progress.wrap_iter(files.iter()) {
-        match file_content {
-            FileContent::Text(content) => {
-                File::create(path.join(file_path))?.write_all(content.as_bytes())?
-            }
-            FileContent::Binary(content) => {
-                File::create(path.join(file_path))?.write_all(content)?
-            }
-        }
+        let path = path.join(file_path);
+        create_and_write_file(&path, file_content)?;
     }
 
     progress.finish_and_clear();
