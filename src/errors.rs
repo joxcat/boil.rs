@@ -52,6 +52,6 @@ pub enum BoilrError {
     ArgNotFoundError,
     #[error("{path:?} is not a directory")]
     NotADirectoryError { path: PathBuf },
-    #[error("Error happened at runtime")]
-    RuntimeError,
+    #[error("Generic error")]
+    UnspecifiedError,
 }

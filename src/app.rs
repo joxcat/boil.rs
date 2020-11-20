@@ -71,14 +71,23 @@ pub fn init_app<'a, 'b>() -> App<'a, 'b> {
         .subcommand(
             SubCommand::with_name("list")
                 .visible_aliases(&["l", "ls"])
-                .settings(GLOBAL_SETTINGS)
+                .settings(&[AppSettings::ColoredHelp, AppSettings::ColorAuto])
                 .about("List cached templates"),
         )
         .subcommand(
             SubCommand::with_name("uninstall")
                 .visible_aliases(&["u", "rm", "remove"])
                 .settings(GLOBAL_SETTINGS)
-                .about("Uninstall cached template"),
+                .about("Uninstall cached template")
+                .arg(
+                    Arg::with_name("name")
+                        .long("name")
+                        .short("n")
+                        .value_name("NAME")
+                        .required(true)
+                        .takes_value(true)
+                        .help("Name of the template in cache"),
+                ),
         )
         .subcommand(
             SubCommand::with_name("generate")

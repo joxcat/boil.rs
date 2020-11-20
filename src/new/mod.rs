@@ -42,10 +42,14 @@ pub fn new(args: &ArgMatches) -> StandardResult<()> {
         }
     })?;
 
-    notify(&format!(
-        "New blank template created at \"{}\"",
-        full_output_path.to_str().ok_or(BoilrError::StrError)?
-    ));
+    notify(
+        &[
+            "New blank template created at '",
+            full_output_path.to_str().ok_or(BoilrError::StrError)?,
+            "'",
+        ]
+        .concat(),
+    );
 
     Ok(())
 }

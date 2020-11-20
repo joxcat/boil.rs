@@ -11,6 +11,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use walkdir::WalkDir;
 
+pub mod config;
 pub mod types;
 
 pub fn prompt_overwrite_if_exist(path: &PathBuf, die_if_dont: bool) -> StandardResult<()> {
@@ -36,18 +37,19 @@ pub fn prompt_overwrite_if_exist(path: &PathBuf, die_if_dont: bool) -> StandardR
             }
         } else if die_if_dont {
             error("Please change output path if you do not want to overwrite it!");
-            return Err(BoilrError::RuntimeError);
+            return Ok(());
         }
     }
     Ok(())
 }
 
-pub fn check_if_install_dir_exist() -> StandardResult<()> {
+pub fn check_if_install_dir_exist() -> StandardResult<bool> {
     let path = home_dir()
         .expect("Cannot find home directory")
         .join(INSTALL_DIR);
+    let exists = path.exists();
 
-    if !path.exists() {
+    if !exists {
         create_dir(&path).map_err(|source| BoilrError::WriteError {
             source,
             path: path.clone(),
@@ -68,7 +70,7 @@ pub fn check_if_install_dir_exist() -> StandardResult<()> {
         return Err(BoilrError::NotADirectoryError { path });
     }
 
-    Ok(())
+    Ok(exists)
 }
 
 pub fn to_output_path(args: &ArgMatches) -> StandardResult<PathBuf> {
