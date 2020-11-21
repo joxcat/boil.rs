@@ -3,23 +3,23 @@ use std::path::PathBuf;
 
 use clap::ArgMatches;
 
-use crate::app::{alert, error, notify};
-use crate::errors::BoilrError;
+use crate::errors::{BoilrError, StandardResult};
 use crate::utils::config::ConfigIO;
+use crate::utils::terminal::{alert, error, notify};
 use crate::utils::{prompt_overwrite_if_exist, recursive_copy};
-use crate::{StandardResult, TEMPLATE_CONFIG_NAME};
+use crate::TEMPLATE_CONFIG_NAME;
 
 pub fn install(args: &ArgMatches) -> StandardResult<()> {
     // Template from
     let mut template_path = PathBuf::from(Option::unwrap_or(
         args.value_of("path"),
         current_dir()
-            .expect("Cannot access current directory")
+            .map_err(|_| BoilrError::AccessCurrentDirError)?
             .to_str()
             .ok_or(BoilrError::StrError)?,
     ));
 
-    let template_name = args.value_of("name").expect("Name cli arg not found");
+    let template_name = args.value_of("name").ok_or(BoilrError::ArgNotFoundError)?;
 
     if !template_path.join(TEMPLATE_CONFIG_NAME).is_file() {
         template_path = template_path.join(template_name);
@@ -46,7 +46,7 @@ pub fn install(args: &ArgMatches) -> StandardResult<()> {
         prompt_overwrite_if_exist(
             &io.dir
                 .clone()
-                .ok_or(BoilrError::UnspecifiedError)?
+                .ok_or(BoilrError::UnspecifiedError(None))?
                 .join(&template.path),
             false,
         )?;
@@ -57,7 +57,7 @@ pub fn install(args: &ArgMatches) -> StandardResult<()> {
     let target_path = io
         .dir
         .clone()
-        .ok_or(BoilrError::UnspecifiedError)?
+        .ok_or(BoilrError::UnspecifiedError(None))?
         .join("templates")
         .join(template_name);
 

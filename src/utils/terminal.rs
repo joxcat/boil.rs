@@ -1,5 +1,4 @@
-use crate::errors::BoilrError;
-use crate::StandardResult;
+use crate::errors::{BoilrError, StandardResult};
 use clap::{App, AppSettings, Arg, SubCommand};
 use console::style;
 use dialoguer::Confirm;
@@ -10,7 +9,7 @@ const GLOBAL_SETTINGS: &[AppSettings] = &[
     AppSettings::ColorAuto,
 ];
 
-pub fn init_app<'a, 'b>() -> App<'a, 'b> {
+pub fn init_term<'a, 'b>() -> App<'a, 'b> {
     App::new("boilrs")
         .about(crate_description!())
         .author(crate_authors!())

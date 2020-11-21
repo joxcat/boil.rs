@@ -1,11 +1,13 @@
-use crate::errors::BoilrError;
-use crate::utils::types::FileContent;
-use crate::utils::{create_and_write_file, prompt_overwrite_if_exist};
-use crate::{StandardResult, TEMPLATE_DIR_NAME};
-use indicatif::ProgressBar;
 use std::fs::create_dir;
 use std::path::PathBuf;
+
+use indicatif::ProgressBar;
 use walkdir::DirEntry;
+
+use crate::errors::{BoilrError, StandardResult};
+use crate::utils::types::FileContent;
+use crate::utils::{create_and_write_file, prompt_overwrite_if_exist};
+use crate::TEMPLATE_DIR_NAME;
 
 pub fn reconstruct(
     from_path: &PathBuf,

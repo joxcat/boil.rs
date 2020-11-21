@@ -1,8 +1,11 @@
-use crate::errors::BoilrError;
-use crate::utils::to_output_path;
-use crate::{app, StandardResult, TEMPLATE_CONFIG_NAME};
-use clap::ArgMatches;
 use std::path::PathBuf;
+
+use clap::ArgMatches;
+
+use crate::errors::{BoilrError, StandardResult};
+use crate::utils::terminal::{error, notify};
+use crate::utils::to_output_path;
+use crate::TEMPLATE_CONFIG_NAME;
 
 mod config;
 mod output;
@@ -20,7 +23,7 @@ pub fn generate(args: &ArgMatches) -> StandardResult<()> {
 
     let output_path = to_output_path(args)?;
     if !output_path.is_dir() {
-        app::error("Output path is not a directory!");
+        error("Output path is not a directory!");
         return Err(BoilrError::NotADirectoryError { path: output_path });
     }
 
@@ -31,28 +34,28 @@ pub fn generate(args: &ArgMatches) -> StandardResult<()> {
 
     // * Scanning files and folders in template dir
     let (folder_entries, file_entries) = scanner::scan_dir(&template_path)?;
-    app::notify(&format!(
+    notify(&format!(
         "Scanned files and folders in \"{}\"",
         template_path_str
     ));
 
     // * Parse files using Tera
     let process_files = parser::process_files(&template_path, file_entries, &config)?;
-    app::notify(&format!("Parsed files in \"{}\"", template_path_str));
+    notify(&format!("Parsed files in \"{}\"", template_path_str));
 
     // * Reconstruct template in output
     let full_output_path = output_path.join(name);
     let full_output_path_str = full_output_path.to_str().ok_or(BoilrError::StrError)?;
 
     output::reconstruct(&template_path, &full_output_path, &folder_entries)?;
-    app::notify(&format!(
+    notify(&format!(
         "Reconstructed template directories at \"{}\"",
         full_output_path_str
     ));
 
     output::write(&full_output_path, &process_files)?;
 
-    app::notify(&format!(
+    notify(&format!(
         "Successfully created template at \"{}\"",
         full_output_path_str
     ));

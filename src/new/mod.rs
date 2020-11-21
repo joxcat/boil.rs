@@ -1,9 +1,11 @@
-use crate::app::notify;
-use crate::errors::BoilrError;
-use crate::utils::{prompt_overwrite_if_exist, to_output_path};
-use crate::{app, StandardResult, TEMPLATE_CONFIG_NAME, TEMPLATE_DIR_NAME, TEMPLATE_IGNORE_FILE};
-use clap::ArgMatches;
 use std::fs::{create_dir, File};
+
+use clap::ArgMatches;
+
+use crate::errors::{BoilrError, StandardResult};
+use crate::utils::terminal::{error, notify};
+use crate::utils::{prompt_overwrite_if_exist, to_output_path};
+use crate::{TEMPLATE_CONFIG_NAME, TEMPLATE_DIR_NAME, TEMPLATE_IGNORE_FILE};
 
 pub fn new(args: &ArgMatches) -> StandardResult<()> {
     let output_path = to_output_path(args)?;
@@ -11,7 +13,7 @@ pub fn new(args: &ArgMatches) -> StandardResult<()> {
     let template_name = args.value_of("name").ok_or(BoilrError::ArgNotFoundError)?;
 
     if !output_path.is_dir() {
-        app::error("Output path is not a directory!");
+        error("Output path is not a directory!");
         return Err(BoilrError::NotADirectoryError { path: output_path });
     }
 

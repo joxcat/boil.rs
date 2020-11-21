@@ -1,6 +1,8 @@
 use std::path::PathBuf;
 use thiserror::Error;
 
+pub type StandardResult<T> = std::result::Result<T, BoilrError>;
+
 #[derive(Error, Debug)]
 pub enum BoilrError {
     #[error("Error cannot format {0:?}")]
@@ -46,6 +48,8 @@ pub enum BoilrError {
     StripPrefixError(#[from] std::path::StripPrefixError),
     #[error("Cannot convert to String")]
     StrError,
+    #[error("Cannot find home dir")]
+    HomeDirNotFoundError,
     #[error("Cannot access current directory")]
     AccessCurrentDirError,
     #[error("Error arg not found in clap args")]
@@ -53,5 +57,5 @@ pub enum BoilrError {
     #[error("{path:?} is not a directory")]
     NotADirectoryError { path: PathBuf },
     #[error("Generic error")]
-    UnspecifiedError,
+    UnspecifiedError(Option<String>),
 }

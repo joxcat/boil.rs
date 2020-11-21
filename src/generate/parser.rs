@@ -1,9 +1,18 @@
-use crate::StandardResult;
-use indicatif::ProgressBar;
 use std::collections::HashMap;
+use std::error::Error;
 use std::path::PathBuf;
+
+use indicatif::ProgressBar;
 use tera::{Context, Result, Tera, Value};
 use walkdir::DirEntry;
+
+use crate::errors::{BoilrError, StandardResult};
+use crate::utils::terminal::error;
+use crate::utils::types::FileContent;
+
+// * Plugins
+#[cfg(feature = "case_mod")]
+use super::plugins::case_mod;
 
 pub type TeraFilter<'a> =
     &'a (dyn (Fn(&Value, &HashMap<String, Value>) -> Result<Value>) + Send + Sync);
@@ -63,14 +72,6 @@ fn parse(text: &str, config: &HashMap<String, Value>) -> StandardResult<String> 
         e
     })?)
 }
-
-// * Plugins
-#[cfg(feature = "case_mod")]
-use super::plugins::case_mod;
-use crate::app::error;
-use crate::errors::BoilrError;
-use crate::utils::types::FileContent;
-use std::error::Error;
 
 #[allow(unused_mut)]
 #[allow(clippy::let_and_return)]

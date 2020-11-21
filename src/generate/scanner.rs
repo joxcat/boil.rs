@@ -1,9 +1,12 @@
-use crate::app::alert;
-use crate::{StandardResult, TEMPLATE_DIR_NAME, TEMPLATE_IGNORE_FILE};
+use std::path::PathBuf;
+
 use glob::Pattern;
 use indicatif::ProgressBar;
-use std::path::PathBuf;
 use walkdir::{DirEntry, WalkDir};
+
+use crate::errors::StandardResult;
+use crate::utils::terminal::alert;
+use crate::{TEMPLATE_DIR_NAME, TEMPLATE_IGNORE_FILE};
 
 pub fn scan_dir(template_dir: &PathBuf) -> StandardResult<(Vec<DirEntry>, Vec<DirEntry>)> {
     let mut folders = Vec::new();

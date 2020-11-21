@@ -1,6 +1,8 @@
-use crate::utils::config::ConfigIO;
-use crate::{StandardResult, INSTALL_DIR};
 use clap::ArgMatches;
+
+use crate::errors::StandardResult;
+use crate::utils::config::ConfigIO;
+use crate::INSTALL_DIR;
 
 pub fn list(_args: &ArgMatches) -> StandardResult<()> {
     let io = ConfigIO::new()?;

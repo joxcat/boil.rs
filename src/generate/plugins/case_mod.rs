@@ -1,6 +1,8 @@
-use super::TeraFilter;
 use std::collections::HashMap;
+
 use tera::{Result, Value};
+
+use super::TeraFilter;
 
 pub fn all<'a>() -> Vec<(&'static str, TeraFilter<'a>)> {
     let mut result = Vec::new();
@@ -22,8 +24,9 @@ pub fn all<'a>() -> Vec<(&'static str, TeraFilter<'a>)> {
 }
 
 pub mod case {
-    use super::{HashMap, Result, Value};
     use convert_case::{Case, Casing};
+
+    use super::{HashMap, Result, Value};
 
     pub fn title_case(value: &Value, _: &HashMap<String, Value>) -> Result<Value> {
         let s = tera::try_get_value!("TitleCase", "value", String, value);

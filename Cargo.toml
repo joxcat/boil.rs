@@ -5,6 +5,13 @@ authors = ["Johan Planchon <johan.planchon@simplx.fr>"]
 edition = "2018"
 description = "Small util to generate projets from templates (the installed files are in $HOME/.boilrs)."
 
+[[bin]]
+name = "boilrs"
+path = "src/bin/boilrs.rs"
+
+[lib]
+path = "src/lib.rs"
+
 [features]
 case_mod = ["convert_case"]
 all_plugins = ["case_mod"]

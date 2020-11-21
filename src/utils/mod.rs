@@ -1,24 +1,27 @@
-use crate::app::{alert, error};
-use crate::errors::BoilrError;
-use crate::utils::types::FileContent;
-use crate::{StandardResult, INSTALL_DIR};
-use clap::ArgMatches;
-use dirs::home_dir;
-use indicatif::ProgressBar;
 use std::env::current_dir;
 use std::fs::{create_dir, read, remove_dir_all, remove_file, File};
 use std::io::Write;
 use std::path::PathBuf;
+
+use clap::ArgMatches;
+use dirs::home_dir;
+use indicatif::ProgressBar;
 use walkdir::WalkDir;
 
+use crate::errors::{BoilrError, StandardResult};
+use crate::utils::terminal::{alert, ask, error};
+use crate::utils::types::FileContent;
+use crate::INSTALL_DIR;
+
 pub mod config;
+pub mod terminal;
 pub mod types;
 
 pub fn prompt_overwrite_if_exist(path: &PathBuf, die_if_dont: bool) -> StandardResult<()> {
     let path_str = path.to_str().ok_or(BoilrError::StrError)?;
 
     if path.exists() {
-        if crate::app::ask(&format!(
+        if ask(&format!(
             "File/Directory already exist at \"{}\" do you want to overwrite it?",
             path_str
         ))? {
@@ -45,7 +48,7 @@ pub fn prompt_overwrite_if_exist(path: &PathBuf, die_if_dont: bool) -> StandardR
 
 pub fn check_if_install_dir_exist() -> StandardResult<bool> {
     let path = home_dir()
-        .expect("Cannot find home directory")
+        .ok_or(BoilrError::HomeDirNotFoundError)?
         .join(INSTALL_DIR);
     let exists = path.exists();
 

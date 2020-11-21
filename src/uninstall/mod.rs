@@ -1,15 +1,14 @@
 use std::fs::remove_dir_all;
+use std::path::PathBuf;
 
 use clap::ArgMatches;
 
-use crate::app::{alert, notify};
-use crate::errors::BoilrError;
+use crate::errors::{BoilrError, StandardResult};
 use crate::utils::config::ConfigIO;
-use crate::StandardResult;
-use std::path::PathBuf;
+use crate::utils::terminal::{alert, notify};
 
 pub fn uninstall(args: &ArgMatches) -> StandardResult<()> {
-    let template_name = args.value_of("name").expect("Name cli arg not found");
+    let template_name = args.value_of("name").ok_or(BoilrError::ArgNotFoundError)?;
 
     let mut io = ConfigIO::new()?;
 

@@ -4,10 +4,10 @@ use std::path::PathBuf;
 
 use dirs::home_dir;
 
-use crate::errors::BoilrError;
+use crate::errors::{BoilrError, StandardResult};
 use crate::utils::check_if_install_dir_exist;
 use crate::utils::types::{Config, Template};
-use crate::{StandardResult, CONFIG_FILE_NAME, INSTALL_DIR};
+use crate::{CONFIG_FILE_NAME, INSTALL_DIR};
 
 #[derive(Debug, Clone)]
 pub struct ConfigIO {
@@ -29,7 +29,7 @@ impl ConfigIO {
     pub fn get_path() -> StandardResult<PathBuf> {
         check_if_install_dir_exist()?;
         let install_directory_path = home_dir()
-            .expect("Cannot find HOME directory")
+            .ok_or(BoilrError::HomeDirNotFoundError)?
             .join(INSTALL_DIR);
 
         Ok(install_directory_path.join(CONFIG_FILE_NAME))
@@ -38,7 +38,7 @@ impl ConfigIO {
     pub fn get_dir_path() -> StandardResult<PathBuf> {
         check_if_install_dir_exist()?;
         let install_directory_path = home_dir()
-            .expect("Cannot find HOME directory")
+            .ok_or(BoilrError::HomeDirNotFoundError)?
             .join(INSTALL_DIR);
 
         Ok(install_directory_path)
