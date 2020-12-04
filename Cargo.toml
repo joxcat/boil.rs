@@ -14,8 +14,8 @@ path = "src/lib.rs"
 
 [features]
 case_mod = ["convert_case"]
-all_plugins = ["case_mod"]
-smaller = []
+fake_mod = ["fake"]
+all_plugins = ["case_mod", "fake_mod"]
 
 [dependencies]
 # Parsing files
@@ -40,6 +40,7 @@ anyhow = "1.0"
 thiserror = "1.0"
 # Plugins
 convert_case = { version = "0.4", optional = true }
+fake = { version = "2.2", features = ["chrono"], default-features = false, optional = true }
 
 [profile.release]
 lto = true

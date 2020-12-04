@@ -3,15 +3,7 @@
 use anyhow::{Context, Result};
 use human_panic::setup_panic;
 
-/* SIZE OPTIMISATION */
 use boilrs::{generate, install, list, new, uninstall, utils};
-#[cfg(feature = "smaller")]
-use std::alloc::System;
-
-#[cfg(feature = "smaller")]
-#[global_allocator]
-static A: System = System;
-/* SIZE OPTIMISATION */
 
 fn main() -> Result<()> {
     setup_panic!();
