@@ -1,15 +1,31 @@
-use crate::StandardResult;
-use console::style;
-use dialoguer::{Confirm, Input, Select};
 use std::collections::HashMap;
 use std::path::PathBuf;
+
+use console::style;
+use dialoguer::{Confirm, Input, Select};
 use tera::Value;
 
-pub fn parse_config(path: PathBuf) -> StandardResult<HashMap<String, Value>> {
-    let toml: toml::Value = toml::from_str(&std::fs::read_to_string(path)?)?;
+use crate::errors::{BoilrError, StandardResult};
+use crate::utils::terminal::alert;
+
+pub fn parse_config(path: &PathBuf) -> StandardResult<HashMap<String, Value>> {
+    let toml: toml::Value = toml::from_str(&std::fs::read_to_string(&path).map_err(|source| {
+        BoilrError::ReadError {
+            source,
+            path: path.clone(),
+        }
+    })?)
+    .map_err(|source| BoilrError::TomlDeserializeError {
+        source,
+        path: path.clone(),
+    })?;
+
     let mut config: HashMap<String, Value> = HashMap::new();
 
-    for (key, val) in toml.as_table().expect("Cannot parse config file") {
+    for (key, val) in toml
+        .as_table()
+        .ok_or_else(|| BoilrError::UnspecifiedError(Some("Cannot parse config file".into())))?
+    {
         match val {
             toml::Value::Array(vals) => {
                 config.insert(key.clone(), Value::String(ask_within_array(key, vals)?))
@@ -22,7 +38,7 @@ pub fn parse_config(path: PathBuf) -> StandardResult<HashMap<String, Value>> {
                 config.insert(key.clone(), Value::Bool(ask_confirmation(key, b)?))
             }
             _ => {
-                crate::app::alert(&format!(
+                alert(&format!(
                     "Unsupported variable type in the configuration: \"{}\" with value \"{}\"",
                     key,
                     val.to_string()
@@ -36,59 +52,72 @@ pub fn parse_config(path: PathBuf) -> StandardResult<HashMap<String, Value>> {
 }
 
 fn ask_with_default_string(key: &str, default: &str) -> StandardResult<String> {
-    Ok(Input::<String>::new()
+    Input::<String>::new()
         .default(default.to_string())
         .show_default(false)
         .with_prompt(format!(
             "{} {} \"{}\" {}",
-            style("[?]").bold().blue(),
+            style("[?]").bold().cyan(),
             style("Please choose a value for").bold(),
             style(key).bold(),
-            style(format!("[default: \"{}\"]", default)).blue()
+            style(format!("[default: \"{}\"]", default)).cyan()
         ))
-        .interact()?)
+        .interact()
+        .map_err(|source| BoilrError::TerminalError { source })
 }
 
 fn ask_within_array(key: &str, arr: &[toml::Value]) -> StandardResult<String> {
     let arr = arr
         .iter()
         .map(|el| {
-            el.as_str()
-                .expect("Internal error while prompting for array element")
+            el.as_str().ok_or_else(|| {
+                BoilrError::UnspecifiedError(Some(
+                    "Internal error while prompting for array element".into(),
+                ))
+            })
         })
-        .collect::<Vec<&str>>();
+        .collect::<StandardResult<Vec<&str>>>()?;
     Ok(arr
         .get(
             Select::new()
                 .default(0)
                 .with_prompt(format!(
                     "{} {} \"{}\" {}",
-                    style("[?]").bold().blue(),
+                    style("[?]").bold().cyan(),
                     style("Please choose an option for").bold(),
                     style(key).bold(),
                     style(format!(
                         "[default: \"{}\"]",
-                        arr.first().expect("Array in config is empty")
+                        arr.first()
+                            .ok_or_else(|| BoilrError::UnspecifiedError(Some(
+                                "Array in config is empty".into()
+                            )))?
                     ))
-                    .blue()
+                    .cyan()
                 ))
                 .items(&arr)
-                .interact()?,
+                .interact()
+                .map_err(|source| BoilrError::TerminalError { source })?,
         )
-        .expect("Internal error while prompting for array element")
+        .ok_or_else(|| {
+            BoilrError::UnspecifiedError(Some(
+                "Internal error while prompting for array element".into(),
+            ))
+        })?
         .to_string())
 }
 
 fn ask_confirmation(key: &str, default: &bool) -> StandardResult<bool> {
-    Ok(Confirm::new()
+    Confirm::new()
         .default(*default)
         .show_default(false)
         .with_prompt(format!(
             "{} {} \"{}\" {}",
-            style("[?]").bold().blue(),
+            style("[?]").bold().cyan(),
             style("Please choose (true/false) for").bold(),
             style(key).bold(),
-            style(format!("[default: \"{}\"]", default)).blue()
+            style(format!("[default: \"{}\"]", default)).cyan()
         ))
-        .interact()?)
+        .interact()
+        .map_err(|source| BoilrError::TerminalError { source })
 }

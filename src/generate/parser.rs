@@ -1,18 +1,21 @@
-use crate::StandardResult;
-use indicatif::ProgressBar;
 use std::collections::HashMap;
+use std::error::Error;
 use std::path::PathBuf;
+
+use indicatif::ProgressBar;
 use tera::{Context, Result, Tera, Value};
 use walkdir::DirEntry;
 
+use crate::errors::{BoilrError, StandardResult};
+use crate::utils::terminal::error;
+use crate::utils::types::FileContent;
+
+// * Plugins
+#[cfg(feature = "case_mod")]
+use super::plugins::case_mod;
+
 pub type TeraFilter<'a> =
     &'a (dyn (Fn(&Value, &HashMap<String, Value>) -> Result<Value>) + Send + Sync);
-
-#[derive(Debug, Clone)]
-pub enum FileContent {
-    Text(String),
-    Binary(Vec<u8>),
-}
 
 pub fn process_files(
     template_path: &PathBuf,
@@ -39,7 +42,12 @@ pub fn process_files(
                 file.path()
                     .strip_prefix(template_path.join("template"))?
                     .to_path_buf(),
-                FileContent::Binary(std::fs::read(file.path())?),
+                FileContent::Binary(std::fs::read(file.path()).map_err(|source| {
+                    BoilrError::ReadError {
+                        source,
+                        path: file.path().to_path_buf(),
+                    }
+                })?),
             )),
         }
     }
@@ -59,13 +67,14 @@ fn parse(text: &str, config: &HashMap<String, Value>) -> StandardResult<String> 
         tera.register_filter(filter_name, filter);
     }
 
-    Ok(tera.render_str(text, &context)?)
+    Ok(tera.render_str(text, &context).map_err(|e| {
+        error(&format!("Error while rendering template: {:?}", e.source()));
+        e
+    })?)
 }
 
-// * Plugins
-#[cfg(feature = "case_mod")]
-use crate::plugins::case_mod;
-
+#[allow(unused_mut)]
+#[allow(clippy::let_and_return)]
 #[allow(unused_variables)]
 fn filters_plugins<'a>() -> Vec<(&'static str, TeraFilter<'a>)> {
     let mut result = Vec::new();

@@ -1,13 +1,15 @@
-use crate::parser::TeraFilter;
 use std::collections::HashMap;
+
 use tera::{Result, Value};
+
+use super::TeraFilter;
 
 pub fn all<'a>() -> Vec<(&'static str, TeraFilter<'a>)> {
     let mut result = Vec::new();
     result.push(("TitleCase", &case::title_case as TeraFilter<'a>));
     result.push(("togglecase", &case::toggle_case as TeraFilter<'a>));
     result.push(("flatcase", &case::flat_case as TeraFilter<'a>));
-    result.push(("alternatingcase", &case::flat_case as TeraFilter<'a>));
+    result.push(("alternatingcase", &case::alternating_case as TeraFilter<'a>));
     result.push(("snake_case", &case::snake_case as TeraFilter<'a>));
     result.push((
         "screaming_snake_case",
@@ -22,8 +24,9 @@ pub fn all<'a>() -> Vec<(&'static str, TeraFilter<'a>)> {
 }
 
 pub mod case {
-    use super::{HashMap, Result, Value};
     use convert_case::{Case, Casing};
+
+    use super::{HashMap, Result, Value};
 
     pub fn title_case(value: &Value, _: &HashMap<String, Value>) -> Result<Value> {
         let s = tera::try_get_value!("TitleCase", "value", String, value);
